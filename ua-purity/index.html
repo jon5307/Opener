@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#09090b">
+  <title>UA 순결 심사국</title>
+  <style>
+    :root {
+      font-family: Inter, Pretendard, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color-scheme: dark;
+      --bg: #09090b;
+      --panel: rgba(24, 24, 27, 0.92);
+      --line: #3f3f46;
+      --muted: #a1a1aa;
+      --good: #4ade80;
+      --bad: #fb7185;
+      --warn: #facc15;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(127, 29, 29, 0.28), transparent 32rem),
+        radial-gradient(circle at 80% 90%, rgba(30, 64, 175, 0.2), transparent 34rem),
+        var(--bg);
+      color: #fafafa;
+    }
+
+    main {
+      width: min(820px, 100%);
+      padding: clamp(24px, 5vw, 48px);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--panel);
+      box-shadow: 0 24px 90px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(16px);
+    }
+
+    main.accepted { border-color: rgba(74, 222, 128, 0.7); }
+    main.rejected { border-color: rgba(251, 113, 133, 0.8); }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font: 700 12px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: 0.18em;
+    }
+
+    h1 {
+      max-width: 720px;
+      margin: 0;
+      font-size: clamp(40px, 8vw, 82px);
+      line-height: 0.98;
+      letter-spacing: -0.055em;
+    }
+
+    .lead {
+      max-width: 660px;
+      margin: 22px 0;
+      color: #d4d4d8;
+      font-size: 17px;
+      line-height: 1.65;
+    }
+
+    .score-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px 20px;
+      align-items: end;
+      margin: 28px 0 18px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(9, 9, 11, 0.58);
+    }
+
+    .score-label { color: var(--muted); font-weight: 700; }
+    .score-number { font-size: clamp(44px, 9vw, 72px); font-weight: 900; line-height: 0.9; }
+    .score-number.good { color: var(--good); }
+    .score-number.bad { color: var(--bad); }
+
+    .meter {
+      grid-column: 1 / -1;
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #27272a;
+    }
+
+    .meter > div {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: currentColor;
+      transition: width 700ms cubic-bezier(.2,.8,.2,1);
+    }
+
+    .identity {
+      margin: 16px 0 22px;
+      padding: 15px 17px;
+      border-left: 3px solid currentColor;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .violations {
+      margin: 22px 0;
+      padding: 8px 18px 8px 42px;
+      border: 1px solid rgba(251, 113, 133, 0.4);
+      border-radius: 14px;
+      background: rgba(127, 29, 29, 0.16);
+    }
+
+    .violations li { margin: 12px 0; line-height: 1.45; }
+    .penalty {
+      display: inline-block;
+      min-width: 52px;
+      color: var(--bad);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-weight: 900;
+    }
+
+    details {
+      margin-top: 18px;
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+    }
+
+    summary { cursor: pointer; color: #d4d4d8; }
+
+    code {
+      display: block;
+      margin-top: 12px;
+      padding: 16px;
+      overflow-wrap: anywhere;
+      border-radius: 12px;
+      background: #050507;
+      color: #e4e4e7;
+      font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid #52525b;
+      border-radius: 11px;
+      padding: 11px 16px;
+      background: #27272a;
+      color: #fafafa;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:hover { background: #3f3f46; }
+    button:focus-visible { outline: 3px solid #60a5fa; outline-offset: 3px; }
+
+    .stamp {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 7px 10px;
+      border: 2px solid currentColor;
+      font: 900 13px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: 0.1em;
+      transform: rotate(-2deg);
+    }
+
+    footer {
+      margin-top: 30px;
+      color: #71717a;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 560px) {
+      body { padding: 12px; }
+      main { border-radius: 18px; }
+      .score-card { grid-template-columns: 1fr; }
+      .score-number { margin-top: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <main id="app" aria-live="polite"></main>
+
+  <script>
+    "use strict";
+
+    const MIN_PURITY_SCORE = 70;
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      })[character]);
+    }
+
+    function test(ua, pattern) {
+      return pattern.test(ua);
+    }
+
+    function calculatePurity(ua) {
+      let score = 100;
+      const reasons = [];
+
+      const s = {
+        mozilla: test(ua, /^Mozilla\/5\.0(?:\s|$)/),
+        appleWebKit: test(ua, /AppleWebKit\/[\d.]+/),
+        gecko: test(ua, /\bGecko\/[\d.]+/),
+        chrome: test(ua, /\b(?:Chrome|CriOS)\/[\d.]+/),
+        firefox: test(ua, /\b(?:Firefox|FxiOS)\/[\d.]+/),
+        edge: test(ua, /\b(?:Edg|EdgA|EdgiOS)\/[\d.]+/),
+        opera: test(ua, /\b(?:OPR|Opera)\/[\d.]+/),
+        samsung: test(ua, /\bSamsungBrowser\/[\d.]+/),
+        vivaldi: test(ua, /\bVivaldi\/[\d.]+/),
+        safari: test(ua, /\bSafari\/[\d.]+/),
+        safariVersion: test(ua, /\bVersion\/[\d.]+/),
+        webview: test(ua, /(?:;\s*wv\)|\bVersion\/4\.0\b)/),
+        android: test(ua, /\bAndroid\b/),
+        ios: test(ua, /\b(?:iPhone|iPad|iPod)\b/),
+        windows: test(ua, /\bWindows NT\b/),
+        macOS: test(ua, /\bMacintosh\b/),
+        linux: test(ua, /\bLinux\b/),
+        headless: test(ua, /\bHeadlessChrome\/[\d.]+/)
+      };
+
+      function punish(points, reason) {
+        score -= points;
+        reasons.push({ points, reason });
+      }
+
+      if (!ua) punish(100, "신원 문자열이 제출되지 않았습니다.");
+      if (!s.mozilla) punish(18, "Mozilla/5.0으로 시작하지 않습니다.");
+      if (ua.length > 0 && ua.length < 35) punish(30, "UA가 지나치게 짧아 신원을 구성할 정보가 부족합니다.");
+      if (ua.length > 600) punish(25, "UA가 지나치게 길어 자기소개서로 의심됩니다.");
+      if (/[\r\n\0]/.test(ua)) punish(100, "금지된 제어 문자가 포함되어 있습니다.");
+      if (/[^\x20-\x7e]/.test(ua)) punish(15, "비ASCII 문자가 포함되어 있습니다.");
+
+      if (s.android && s.ios) punish(100, "Android와 iOS를 동시에 주장합니다.");
+      if (s.windows && s.ios) punish(80, "Windows와 iOS를 동시에 주장합니다.");
+      if (s.windows && s.android) punish(55, "Windows와 Android를 동시에 주장합니다.");
+      if (s.android && s.macOS) punish(50, "Android와 macOS를 동시에 주장합니다.");
+
+      if (s.firefox && s.chrome) punish(60, "Firefox와 Chrome 제품 계보를 동시에 주장합니다.");
+      if (s.firefox && s.edge) punish(60, "Firefox와 Edge 제품 계보를 동시에 주장합니다.");
+      if (s.firefox && s.opera) punish(60, "Firefox와 Opera 제품 계보를 동시에 주장합니다.");
+
+      if (s.firefox && !s.gecko && !test(ua, /FxiOS\//)) {
+        punish(35, "Firefox라고 주장하면서 Gecko 계보가 없습니다.");
+      }
+
+      if (s.chrome && !s.appleWebKit) punish(35, "Chrome 계열인데 AppleWebKit 토큰이 없습니다.");
+      if (s.chrome && !s.safari) punish(18, "Chrome 계열인데 Safari 호환 토큰이 없습니다.");
+
+      if (s.edge && !s.chrome && !test(ua, /EdgiOS\//)) {
+        punish(30, "Edge라고 주장하면서 Chromium 계보가 없습니다.");
+      }
+      if (s.opera && !s.chrome) punish(30, "Opera라고 주장하면서 Chromium 계보가 없습니다.");
+      if (s.samsung && !s.chrome) punish(30, "Samsung Browser인데 Chromium 계보가 없습니다.");
+      if (s.vivaldi && !s.chrome) punish(30, "Vivaldi인데 Chromium 계보가 없습니다.");
+
+      const standaloneSafari = s.safariVersion && s.safari && !s.chrome && !s.edge && !s.opera;
+      if (standaloneSafari && !s.appleWebKit) punish(40, "Safari라고 주장하면서 AppleWebKit이 없습니다.");
+
+      const recognized = s.firefox || s.chrome || standaloneSafari || s.webview;
+      if (!recognized) punish(42, "어느 공인 브라우저 계보에도 안정적으로 귀속되지 않습니다.");
+
+      if (s.headless) punish(35, "HeadlessChrome 표식이 발견됐습니다.");
+
+      const allowedProductTokens = new Set([
+        "Mozilla", "AppleWebKit", "KHTML", "Gecko", "Firefox", "FxiOS",
+        "Chrome", "CriOS", "Safari", "Version", "Mobile", "Edg", "EdgA",
+        "EdgiOS", "OPR", "Opera", "SamsungBrowser", "Vivaldi", "HeadlessChrome"
+      ]);
+
+      const customProducts = [];
+      const productPattern = /\b([A-Za-z][A-Za-z0-9._-]*)\/([A-Za-z0-9._-]+)\b/g;
+      for (const match of ua.matchAll(productPattern)) {
+        const name = match[1];
+        if (!allowedProductTokens.has(name) && !customProducts.includes(match[0])) {
+          customProducts.push(match[0]);
+        }
+      }
+
+      for (const product of customProducts.slice(0, 4)) {
+        punish(16, `등록되지 않은 제품 토큰이 있습니다: ${product}`);
+      }
+      if (customProducts.length > 4) {
+        punish(10, `그 밖의 미등록 제품 토큰이 ${customProducts.length - 4}개 더 있습니다.`);
+      }
+
+      const uaData = navigator.userAgentData;
+      if (uaData && Array.isArray(uaData.brands)) {
+        const brands = uaData.brands.map(item => item.brand).join(" ");
+        if (s.firefox) punish(35, "Firefox를 주장하지만 Chromium 전용 Client Hints가 존재합니다.");
+        if (s.chrome && !/Chrom|Edge|Opera|Microsoft/i.test(brands)) {
+          punish(20, "UA와 Client Hints의 브라우저 계보가 일치하지 않습니다.");
+        }
+      }
+
+      score = Math.max(0, Math.min(100, score));
+
+      return {
+        score,
+        passed: score >= MIN_PURITY_SCORE,
+        reasons,
+        identity: detectIdentity(s),
+        customProducts
+      };
+    }
+
+    function detectIdentity(s) {
+      if (s.edge) return "Microsoft Edge 계열";
+      if (s.opera) return "Opera 계열";
+      if (s.samsung) return "Samsung Internet";
+      if (s.vivaldi) return "Vivaldi";
+      if (s.firefox) return "Mozilla Firefox 계열";
+      if (s.webview && s.chrome) return "Chromium WebView";
+      if (s.chrome) return "Google Chrome 계열";
+      if (s.safari && s.safariVersion) return "Apple Safari";
+      return "확인 불가";
+    }
+
+    function render() {
+      const app = document.querySelector("#app");
+      const ua = navigator.userAgent || "";
+      const result = calculatePurity(ua);
+      const scoreClass = result.passed ? "good" : "bad";
+      const meterColor = result.passed ? "var(--good)" : "var(--bad)";
+
+      app.className = result.passed ? "accepted" : "rejected";
+      app.style.color = meterColor;
+
+      if (result.passed) {
+        app.innerHTML = `
+          <p class="eyebrow">UA PURITY BUREAU · IDENTITY CONFIRMED</p>
+          <h1>당신이 누구인지 알겠습니다.</h1>
+          <p class="lead">제출된 브라우저 계보가 충분히 일관됩니다. 입장을 허가합니다.</p>
+          <section class="score-card">
+            <span class="score-label">UA 순결 점수 · 통과선 ${MIN_PURITY_SCORE}</span>
+            <strong class="score-number ${scoreClass}">${result.score}</strong>
+            <div class="meter" style="color:${meterColor}"><div id="meter-fill"></div></div>
+          </section>
+          <p class="identity">판정된 신원: <strong>${escapeHtml(result.identity)}</strong></p>
+          <span class="stamp">ENTRY PERMITTED</span>
+          ${renderDetails(ua, result)}
+          <div class="actions"><button type="button" id="reinspect">다시 검사</button></div>
+          <footer>이 페이지는 UA 문자열의 역사적 혼란을 풍자합니다. 점수는 실제 보안 신뢰도를 뜻하지 않습니다.</footer>
+        `;
+      } else {
+        const violations = result.reasons
+          .sort((a, b) => b.points - a.points)
+          .map(item => `<li><span class="penalty">-${item.points}</span>${escapeHtml(item.reason)}</li>`)
+          .join("");
+
+        app.innerHTML = `
+          <p class="eyebrow">UA PURITY BUREAU · IDENTITY REJECTED</p>
+          <h1>나는 네가 누군지 모른다.</h1>
+          <p class="lead">제출된 신원에는 모순이나 미등록 표식이 너무 많습니다. 정체성을 확립한 뒤 다시 방문하십시오.</p>
+          <section class="score-card">
+            <span class="score-label">UA 순결 점수 · 통과선 ${MIN_PURITY_SCORE}</span>
+            <strong class="score-number ${scoreClass}">${result.score}</strong>
+            <div class="meter" style="color:${meterColor}"><div id="meter-fill"></div></div>
+          </section>
+          <ul class="violations">${violations || "<li>설명할 수 없는 불순함이 감지됐습니다.</li>"}</ul>
+          <span class="stamp">ACCESS DENIED</span>
+          ${renderDetails(ua, result)}
+          <div class="actions"><button type="button" id="reinspect">재심 청구</button></div>
+          <footer>이 페이지는 UA 문자열의 역사적 혼란을 풍자합니다. UA만으로 사람·브라우저·봇의 신원을 확정할 수 없습니다.</footer>
+        `;
+      }
+
+      requestAnimationFrame(() => {
+        const fill = document.querySelector("#meter-fill");
+        if (fill) fill.style.width = `${result.score}%`;
+      });
+
+      document.querySelector("#reinspect")?.addEventListener("click", render);
+    }
+
+    function renderDetails(ua, result) {
+      const clientHints = navigator.userAgentData?.brands
+        ?.map(item => `${item.brand}/${item.version}`)
+        .join(", ") || "제공되지 않음";
+
+      return `
+        <details>
+          <summary>제출된 신원 문자열과 판정 자료</summary>
+          <code>${escapeHtml(ua || "(없음)")}</code>
+          <code>판정 신원: ${escapeHtml(result.identity)}\nClient Hints: ${escapeHtml(clientHints)}</code>
+        </details>
+      `;
+    }
+
+    render();
+  </script>
+</body>
+</html>
